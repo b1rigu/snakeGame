@@ -41,6 +41,21 @@ function randomNumber(to) {
     return Math.floor(Math.random() * to);
 }
 
+function drawBoard() {
+    backgroundContext.lineWidth = 1;
+    backgroundContext.strokeStyle = "rgba(0, 0, 0, 0.1)";
+    for (var x = 0; x < canvasWidth - edgePadding * 2; x += playerSizeAndSpeed) {
+        for (var y = 0; y < canvasHeight - edgePadding * 2; y += playerSizeAndSpeed) {
+            backgroundContext.strokeRect(
+                x + edgePadding,
+                y + edgePadding,
+                playerSizeAndSpeed,
+                playerSizeAndSpeed
+            );
+        }
+    }
+}
+
 class Food {
     constructor(x, y) {
         this.position = {
@@ -210,8 +225,18 @@ function initGame() {
 function animationLoop() {
     requestAnimationFrame(animationLoop);
 
-    backgroundContext.fillStyle = "white";
+    backgroundContext.fillStyle = "gray";
     backgroundContext.fillRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
+
+    backgroundContext.fillStyle = "white";
+    backgroundContext.fillRect(
+        edgePadding,
+        edgePadding,
+        backgroundCanvas.width - edgePadding * 2,
+        backgroundCanvas.height - edgePadding * 2
+    );
+
+    drawBoard();
 
     foods.forEach((food) => food.draw());
     snake.draw();
