@@ -96,6 +96,7 @@ class Snake {
             }
         });
 
+        // hit the wall
         if (
             this.snakeBodies[0].position.x <= 0 ||
             this.snakeBodies[0].position.x + playerSizeAndSpeed >= canvasWidth ||
@@ -106,6 +107,7 @@ class Snake {
             return;
         }
 
+        // hit itself
         if (this.snakeBodies.length > 1) {
             for (let index = 1; index < this.snakeBodies.length; index++) {
                 if (
