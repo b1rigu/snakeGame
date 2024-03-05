@@ -17,51 +17,9 @@ backgroundCanvas.height = canvasHeight;
 const backgroundContext = backgroundCanvas.getContext("2d", { alpha: false });
 backgroundContext.imageSmoothingEnabled = false;
 
-let lastKeyPressed = "";
-
-let msPrevs = {};
-function canRunLoop(fps) {
-    if (!(fps.toString() in msPrevs)) {
-        msPrevs[fps.toString()] = performance.now();
-    }
-    const msPerFrame = 1000 / fps;
-
-    const msNow = performance.now();
-    const msPassed = msNow - msPrevs[fps.toString()];
-
-    if (msPassed < msPerFrame) return false;
-
-    const excessTime = msPassed % msPerFrame;
-    msPrevs[fps.toString()] = msNow - excessTime;
-
-    return true;
-}
-
-function randomNumber(to) {
-    return Math.floor(Math.random() * to);
-}
-
-function drawBoard() {
-    backgroundContext.lineWidth = 1;
-    backgroundContext.strokeStyle = "rgba(0, 0, 0, 0.1)";
-    for (var x = 0; x < canvasWidth - edgePadding * 2; x += playerSizeAndSpeed) {
-        for (var y = 0; y < canvasHeight - edgePadding * 2; y += playerSizeAndSpeed) {
-            backgroundContext.strokeRect(
-                x + edgePadding,
-                y + edgePadding,
-                playerSizeAndSpeed,
-                playerSizeAndSpeed
-            );
-        }
-    }
-}
-
 class Food {
-    constructor(x, y) {
-        this.position = {
-            x,
-            y,
-        };
+    constructor(position) {
+        this.position = position;
     }
 
     draw() {
@@ -211,20 +169,44 @@ class Snake {
     }
 }
 
-let snake = new Snake();
-let foods = [];
+let msPrevs = {};
+function canRunLoop(fps, id) {
+    if (!(id.toString() in msPrevs)) {
+        msPrevs[id.toString()] = performance.now();
+    }
+    const msPerFrame = 1000 / fps;
 
-function initGame() {
-    lastKeyPressed = "d";
-    foods = [];
-    snake = new Snake();
-    animationLoop();
-    physicsLoop();
+    const msNow = performance.now();
+    const msPassed = msNow - msPrevs[id.toString()];
+
+    if (msPassed < msPerFrame) return false;
+
+    const excessTime = msPassed % msPerFrame;
+    msPrevs[id.toString()] = msNow - excessTime;
+
+    return true;
 }
 
-function animationLoop() {
-    requestAnimationFrame(animationLoop);
+function randomNumber(to) {
+    return Math.floor(Math.random() * to);
+}
 
+function drawBoard() {
+    backgroundContext.lineWidth = 1;
+    backgroundContext.strokeStyle = "rgba(0, 0, 0, 0.1)";
+    for (var x = 0; x < canvasWidth - edgePadding * 2; x += playerSizeAndSpeed) {
+        for (var y = 0; y < canvasHeight - edgePadding * 2; y += playerSizeAndSpeed) {
+            backgroundContext.strokeRect(
+                x + edgePadding,
+                y + edgePadding,
+                playerSizeAndSpeed,
+                playerSizeAndSpeed
+            );
+        }
+    }
+}
+
+function drawBackground() {
     backgroundContext.fillStyle = "gray";
     backgroundContext.fillRect(0, 0, backgroundCanvas.width, backgroundCanvas.height);
 
@@ -235,6 +217,64 @@ function animationLoop() {
         backgroundCanvas.width - edgePadding * 2,
         backgroundCanvas.height - edgePadding * 2
     );
+}
+
+function configureSnakeDirectionByKey() {
+    if (lastKeyPressed == "w" && snake.snakeBodies[0].goingDirection != "down")
+        snake.setDirection("up");
+    else if (lastKeyPressed == "a" && snake.snakeBodies[0].goingDirection != "right")
+        snake.setDirection("left");
+    else if (lastKeyPressed == "s" && snake.snakeBodies[0].goingDirection != "up")
+        snake.setDirection("down");
+    else if (lastKeyPressed == "d" && snake.snakeBodies[0].goingDirection != "left")
+        snake.setDirection("right");
+}
+
+function addFoodIfEmpty() {
+    if (foods.length == 0) {
+        let allPossiblePlaces = [];
+
+        for (let i = 0; i < maxVertical; i++) {
+            for (let j = 0; j < maxHorizontal; j++) {
+                const posX = edgePadding + playerSizeAndSpeed * j;
+                const posY = edgePadding + playerSizeAndSpeed * i;
+                const snakeFound = snake.snakeBodies.findIndex(
+                    (snakeBody) => snakeBody.position.x == posX && snakeBody.position.y == posY
+                );
+                if (snakeFound == -1) {
+                    allPossiblePlaces.push({
+                        position: {
+                            x: posX,
+                            y: posY,
+                        },
+                    });
+                }
+            }
+        }
+
+        const placeToPutFood = allPossiblePlaces[randomNumber(allPossiblePlaces.length)];
+
+        foods.push(new Food(placeToPutFood.position));
+    }
+}
+
+function checkFoodCollision() {
+    if (
+        foods[0] &&
+        snake.snakeBodies[0].position.x + playerSizeAndSpeed > foods[0].position.x &&
+        snake.snakeBodies[0].position.x < foods[0].position.x + playerSizeAndSpeed &&
+        snake.snakeBodies[0].position.y < foods[0].position.y + playerSizeAndSpeed &&
+        snake.snakeBodies[0].position.y + playerSizeAndSpeed > foods[0].position.y
+    ) {
+        snake.addBody();
+        foods.pop();
+    }
+}
+
+function animationLoop() {
+    requestAnimationFrame(animationLoop);
+
+    drawBackground();
 
     drawBoard();
 
@@ -247,65 +287,27 @@ function animationLoop() {
 function physicsLoop() {
     requestAnimationFrame(physicsLoop);
 
-    if (!canRunLoop(physicsFPS)) return;
+    if (!canRunLoop(physicsFPS, 0)) return;
 
-    if (lastKeyPressed == "w" && snake.snakeBodies[0].goingDirection != "down")
-        snake.setDirection("up");
-    else if (lastKeyPressed == "a" && snake.snakeBodies[0].goingDirection != "right")
-        snake.setDirection("left");
-    else if (lastKeyPressed == "s" && snake.snakeBodies[0].goingDirection != "up")
-        snake.setDirection("down");
-    else if (lastKeyPressed == "d" && snake.snakeBodies[0].goingDirection != "left")
-        snake.setDirection("right");
+    configureSnakeDirectionByKey();
 
-    if (foods.length == 0) {
-        let allPossiblePlaces = [];
-
-        for (let i = 0; i < maxVertical; i++) {
-            for (let j = 0; j < maxHorizontal; j++) {
-                allPossiblePlaces.push({
-                    position: {
-                        x: edgePadding + playerSizeAndSpeed * j,
-                        y: edgePadding + playerSizeAndSpeed * i,
-                    },
-                });
-            }
-        }
-
-        allPossiblePlaces = allPossiblePlaces.filter((place) => {
-            let collided = false;
-            for (let i = 0; i < snake.snakeBodies.length; i++) {
-                if (
-                    snake.snakeBodies[i].position.x + playerSizeAndSpeed > place.position.x &&
-                    snake.snakeBodies[i].position.x < place.position.x + playerSizeAndSpeed &&
-                    snake.snakeBodies[i].position.y < place.position.y + playerSizeAndSpeed &&
-                    snake.snakeBodies[i].position.y + playerSizeAndSpeed > place.position.y
-                ) {
-                    collided = true;
-                    break;
-                }
-            }
-            if (collided) return false;
-
-            return true;
-        });
-
-        const placeToPutFood = allPossiblePlaces[randomNumber(allPossiblePlaces.length)];
-
-        foods.push(new Food(placeToPutFood.position.x, placeToPutFood.position.y));
-    }
+    addFoodIfEmpty();
 
     snake.update();
 
-    foods = foods.filter((food) => {
-        const collided =
-            snake.snakeBodies[0].position.x + playerSizeAndSpeed > food.position.x &&
-            snake.snakeBodies[0].position.x < food.position.x + playerSizeAndSpeed &&
-            snake.snakeBodies[0].position.y < food.position.y + playerSizeAndSpeed &&
-            snake.snakeBodies[0].position.y + playerSizeAndSpeed > food.position.y;
-        if (collided) snake.addBody();
-        return !collided;
-    });
+    checkFoodCollision();
+}
+
+let lastKeyPressed = "";
+let snake = new Snake();
+let foods = [];
+
+function initGame() {
+    lastKeyPressed = "d";
+    foods = [];
+    snake = new Snake();
+    animationLoop();
+    physicsLoop();
 }
 
 initGame();
