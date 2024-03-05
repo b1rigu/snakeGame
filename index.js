@@ -1,4 +1,4 @@
-const physicsFPS = 1;
+const physicsFPS = 10;
 const playerSizeAndSpeed = 30;
 const maxHorizontal = 35;
 const maxVertical = 20;
