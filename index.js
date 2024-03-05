@@ -51,25 +51,23 @@ class Snake {
         ];
     }
 
-    update() {
-        this.snakeBodies.forEach((snake) => {
-            switch (snake.goingDirection) {
-                case "right":
-                    snake.position.x += playerSizeAndSpeed;
-                    break;
-                case "left":
-                    snake.position.x -= playerSizeAndSpeed;
-                    break;
-                case "up":
-                    snake.position.y -= playerSizeAndSpeed;
-                    break;
-                case "down":
-                    snake.position.y += playerSizeAndSpeed;
-                    break;
-            }
-        });
+    checkCollisionBetweenItself(index) {
+        if (
+            index > 0 &&
+            this.snakeBodies[0].position.x + playerSizeAndSpeed >
+                this.snakeBodies[index].position.x &&
+            this.snakeBodies[0].position.x <
+                this.snakeBodies[index].position.x + playerSizeAndSpeed &&
+            this.snakeBodies[0].position.y <
+                this.snakeBodies[index].position.y + playerSizeAndSpeed &&
+            this.snakeBodies[0].position.y + playerSizeAndSpeed > this.snakeBodies[index].position.y
+        ) {
+            initGame();
+            return;
+        }
+    }
 
-        // hit the wall
+    checkCollisionToWall() {
         if (
             this.snakeBodies[0].position.x <= 0 ||
             this.snakeBodies[0].position.x + playerSizeAndSpeed >= canvasWidth ||
@@ -79,48 +77,52 @@ class Snake {
             initGame();
             return;
         }
+    }
 
-        // hit itself
-        if (this.snakeBodies.length > 1) {
-            for (let index = 1; index < this.snakeBodies.length; index++) {
-                if (
-                    this.snakeBodies[0].position.x + playerSizeAndSpeed >
-                        this.snakeBodies[index].position.x &&
-                    this.snakeBodies[0].position.x <
-                        this.snakeBodies[index].position.x + playerSizeAndSpeed &&
-                    this.snakeBodies[0].position.y <
-                        this.snakeBodies[index].position.y + playerSizeAndSpeed &&
-                    this.snakeBodies[0].position.y + playerSizeAndSpeed >
-                        this.snakeBodies[index].position.y
-                ) {
-                    initGame();
-                    return;
-                }
-            }
-        }
-
-        for (let index = 0; index < this.snakeBodies.length; index++) {
-            this.snakeBodies[index].previousGoingDirection = this.snakeBodies[index].goingDirection;
-        }
-
+    updateGoingDirectionOfTails() {
         for (let index = 0; index < this.snakeBodies.length; index++) {
             const head = this.snakeBodies[index];
             const tail = this.snakeBodies[index + 1];
             if (tail && head.changeDirection) {
                 tail.goingDirection = head.previousGoingDirection;
             }
+            head.previousGoingDirection = head.goingDirection;
+        }
+    }
+
+    shiftChangeDirectionsByOne() {
+        let previousChangeDirection = false;
+        for (let index = 0; index < this.snakeBodies.length; index++) {
+            const tempChangeDirection = this.snakeBodies[index].changeDirection;
+            this.snakeBodies[index].changeDirection = previousChangeDirection;
+            previousChangeDirection = tempChangeDirection;
+        }
+    }
+
+    update() {
+        for (let index = 0; index < this.snakeBodies.length; index++) {
+            switch (this.snakeBodies[index].goingDirection) {
+                case "right":
+                    this.snakeBodies[index].position.x += playerSizeAndSpeed;
+                    break;
+                case "left":
+                    this.snakeBodies[index].position.x -= playerSizeAndSpeed;
+                    break;
+                case "up":
+                    this.snakeBodies[index].position.y -= playerSizeAndSpeed;
+                    break;
+                case "down":
+                    this.snakeBodies[index].position.y += playerSizeAndSpeed;
+                    break;
+            }
+            this.checkCollisionBetweenItself(index);
         }
 
-        const changeDirectionsMapped = this.snakeBodies.map(
-            (snakeBody) => snakeBody.changeDirection
-        );
+        this.checkCollisionToWall();
 
-        changeDirectionsMapped.unshift(...changeDirectionsMapped.splice(-1));
-        changeDirectionsMapped[0] = false;
+        this.updateGoingDirectionOfTails();
 
-        changeDirectionsMapped.forEach((changeDirection, index) => {
-            this.snakeBodies[index].changeDirection = changeDirection;
-        });
+        this.shiftChangeDirectionsByOne();
     }
 
     draw() {
@@ -141,6 +143,7 @@ class Snake {
     setDirection(direction) {
         if (this.snakeBodies[0].goingDirection != direction) {
             this.snakeBodies[0].goingDirection = direction;
+            this.snakeBodies[0].previousGoingDirection = direction;
             this.snakeBodies[0].changeDirection = true;
         }
     }
