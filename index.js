@@ -1,4 +1,4 @@
-const physicsFPS = 10;
+const physicsFPS = 1;
 const playerSizeAndSpeed = 30;
 const maxHorizontal = 35;
 const maxVertical = 20;
@@ -63,7 +63,6 @@ class Snake {
             this.snakeBodies[0].position.y + playerSizeAndSpeed > this.snakeBodies[index].position.y
         ) {
             initGame();
-            return;
         }
     }
 
@@ -75,7 +74,6 @@ class Snake {
             this.snakeBodies[0].position.y + playerSizeAndSpeed >= canvasHeight
         ) {
             initGame();
-            return;
         }
     }
 
@@ -157,7 +155,7 @@ class Snake {
             goingDirection: this.snakeBodies[this.snakeBodies.length - 1].goingDirection,
             previousGoingDirection:
                 this.snakeBodies[this.snakeBodies.length - 1].previousGoingDirection,
-            changeDirection: this.snakeBodies[this.snakeBodies.length - 1].changeDirection,
+            changeDirection: false,
         });
 
         if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == "up") {
@@ -235,7 +233,7 @@ function configureSnakeDirectionByKey() {
 
 function addFoodIfEmpty() {
     if (foods.length == 0) {
-        let allPossiblePlaces = [];
+        let allPossiblePlaceToPutFood = [];
 
         for (let i = 0; i < maxVertical; i++) {
             for (let j = 0; j < maxHorizontal; j++) {
@@ -245,7 +243,7 @@ function addFoodIfEmpty() {
                     (snakeBody) => snakeBody.position.x == posX && snakeBody.position.y == posY
                 );
                 if (snakeFound == -1) {
-                    allPossiblePlaces.push({
+                    allPossiblePlaceToPutFood.push({
                         position: {
                             x: posX,
                             y: posY,
@@ -255,9 +253,14 @@ function addFoodIfEmpty() {
             }
         }
 
-        const placeToPutFood = allPossiblePlaces[randomNumber(allPossiblePlaces.length)];
-
-        foods.push(new Food(placeToPutFood.position));
+        if (allPossiblePlaceToPutFood.length == 0) {
+            console.log("You won");
+            initGame();
+        } else {
+            const placeToPutFood =
+                allPossiblePlaceToPutFood[randomNumber(allPossiblePlaceToPutFood.length)];
+            foods.push(new Food(placeToPutFood.position));
+        }
     }
 }
 
