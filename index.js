@@ -47,6 +47,7 @@ class Snake {
                 goingDirection: "right",
                 previousGoingDirection: "right",
                 changeDirection: false,
+                changedDirectionOnFrame: false,
             },
         ];
     }
@@ -97,6 +98,28 @@ class Snake {
         }
     }
 
+    updateGoingDirectionOfTailsEfficient() {
+        for (let index = 0; index < this.snakeBodies.length; index++) {
+            const head = this.snakeBodies[index];
+            const tail = this.snakeBodies[index + 1];
+            const secondTail = this.snakeBodies[index + 2];
+            if (
+                tail &&
+                !head.changedDirectionOnFrame &&
+                tail.goingDirection != head.previousGoingDirection
+            ) {
+                tail.goingDirection = head.previousGoingDirection;
+                tail.changedDirectionOnFrame = true;
+            }
+
+            if (secondTail && secondTail.goingDirection != tail.previousGoingDirection) {
+                tail.changedDirectionOnFrame = false;
+            }
+
+            head.previousGoingDirection = head.goingDirection;
+        }
+    }
+
     update() {
         for (let index = 0; index < this.snakeBodies.length; index++) {
             switch (this.snakeBodies[index].goingDirection) {
@@ -114,13 +137,12 @@ class Snake {
                     break;
             }
             this.checkCollisionBetweenItself(index);
+            this.snakeBodies[index].changedDirectionOnFrame = false;
         }
 
         this.checkCollisionToWall();
 
-        this.updateGoingDirectionOfTails();
-
-        this.shiftChangeDirectionsByOne();
+        this.updateGoingDirectionOfTailsEfficient();
     }
 
     draw() {
@@ -156,6 +178,7 @@ class Snake {
             previousGoingDirection:
                 this.snakeBodies[this.snakeBodies.length - 1].previousGoingDirection,
             changeDirection: false,
+            changedDirectionOnFrame: false,
         });
 
         if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == "up") {
