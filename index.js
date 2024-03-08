@@ -1,6 +1,6 @@
 const physicsFPS = 10;
 const playerSizeAndSpeed = 30;
-const maxHorizontal = 35;
+const maxHorizontal = 40;
 const maxVertical = 20;
 const edgePadding = 10;
 const canvasWidth = edgePadding * 2 + playerSizeAndSpeed * maxHorizontal;
@@ -47,6 +47,7 @@ class Snake {
                 goingDirection: "right",
             },
         ];
+        this.canAddBody = false;
     }
 
     checkCollisionBetweenItself(index) {
@@ -102,6 +103,8 @@ class Snake {
 
         this.checkCollisionToWall();
 
+        if (this.canAddBody) this.addBody();
+
         this.updateGoingDirectionOfTails();
     }
 
@@ -144,6 +147,8 @@ class Snake {
         } else if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == "right") {
             this.snakeBodies[this.snakeBodies.length - 1].position.x -= playerSizeAndSpeed;
         }
+
+        this.canAddBody = false;
     }
 }
 
@@ -249,7 +254,7 @@ function checkFoodCollision() {
         snake.snakeBodies[0].position.y < foods[0].position.y + playerSizeAndSpeed &&
         snake.snakeBodies[0].position.y + playerSizeAndSpeed > foods[0].position.y
     ) {
-        snake.addBody();
+        snake.canAddBody = true;
         foods.pop();
     }
 }
