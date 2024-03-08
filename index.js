@@ -45,9 +45,6 @@ class Snake {
                     y: edgePadding,
                 },
                 goingDirection: "right",
-                previousGoingDirection: "right",
-                changeDirection: false,
-                changedDirectionOnFrame: false,
             },
         ];
     }
@@ -79,44 +76,8 @@ class Snake {
     }
 
     updateGoingDirectionOfTails() {
-        for (let index = 0; index < this.snakeBodies.length; index++) {
-            const head = this.snakeBodies[index];
-            const tail = this.snakeBodies[index + 1];
-            if (tail && head.changeDirection) {
-                tail.goingDirection = head.previousGoingDirection;
-            }
-            head.previousGoingDirection = head.goingDirection;
-        }
-    }
-
-    shiftChangeDirectionsByOne() {
-        let previousChangeDirection = false;
-        for (let index = 0; index < this.snakeBodies.length; index++) {
-            const tempChangeDirection = this.snakeBodies[index].changeDirection;
-            this.snakeBodies[index].changeDirection = previousChangeDirection;
-            previousChangeDirection = tempChangeDirection;
-        }
-    }
-
-    updateGoingDirectionOfTailsEfficient() {
-        for (let index = 0; index < this.snakeBodies.length; index++) {
-            const head = this.snakeBodies[index];
-            const tail = this.snakeBodies[index + 1];
-            const secondTail = this.snakeBodies[index + 2];
-            if (
-                tail &&
-                !head.changedDirectionOnFrame &&
-                tail.goingDirection != head.previousGoingDirection
-            ) {
-                tail.goingDirection = head.previousGoingDirection;
-                tail.changedDirectionOnFrame = true;
-            }
-
-            if (secondTail && secondTail.goingDirection != tail.previousGoingDirection) {
-                tail.changedDirectionOnFrame = false;
-            }
-
-            head.previousGoingDirection = head.goingDirection;
+        for (let index = this.snakeBodies.length - 1; index > 0; index -= 1) {
+            this.snakeBodies[index].goingDirection = this.snakeBodies[index - 1].goingDirection;
         }
     }
 
@@ -137,12 +98,11 @@ class Snake {
                     break;
             }
             this.checkCollisionBetweenItself(index);
-            this.snakeBodies[index].changedDirectionOnFrame = false;
         }
 
         this.checkCollisionToWall();
 
-        this.updateGoingDirectionOfTailsEfficient();
+        this.updateGoingDirectionOfTails();
     }
 
     draw() {
@@ -163,8 +123,6 @@ class Snake {
     setDirection(direction) {
         if (this.snakeBodies[0].goingDirection != direction) {
             this.snakeBodies[0].goingDirection = direction;
-            this.snakeBodies[0].previousGoingDirection = direction;
-            this.snakeBodies[0].changeDirection = true;
         }
     }
 
@@ -175,10 +133,6 @@ class Snake {
                 y: this.snakeBodies[this.snakeBodies.length - 1].position.y,
             },
             goingDirection: this.snakeBodies[this.snakeBodies.length - 1].goingDirection,
-            previousGoingDirection:
-                this.snakeBodies[this.snakeBodies.length - 1].previousGoingDirection,
-            changeDirection: false,
-            changedDirectionOnFrame: false,
         });
 
         if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == "up") {
