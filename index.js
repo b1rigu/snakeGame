@@ -17,22 +17,22 @@ backgroundCanvas.height = canvasHeight;
 const backgroundContext = backgroundCanvas.getContext("2d", { alpha: false });
 backgroundContext.imageSmoothingEnabled = false;
 
+const allLocationsMatrix = getAllPlaceToSpawnFood();
+
+const Directions = {
+    Up: "up",
+    Down: "down",
+    Left: "left",
+    Right: "right",
+};
+
 class Food {
     constructor(position) {
         this.position = position;
     }
 
     draw() {
-        backgroundContext.beginPath();
-        backgroundContext.fillStyle = "red";
-        backgroundContext.roundRect(
-            this.position.x,
-            this.position.y,
-            playerSizeAndSpeed,
-            playerSizeAndSpeed,
-            30
-        );
-        backgroundContext.fill();
+        drawRoundedRectangle("red", this.position.x, this.position.y, 30);
     }
 }
 
@@ -44,10 +44,25 @@ class Snake {
                     x: edgePadding,
                     y: edgePadding,
                 },
-                goingDirection: "right",
+                goingDirection: Directions.Right,
             },
         ];
         this.canAddBody = false;
+    }
+
+    setCanFoodSpawnLocationStatus(index) {
+        const snakeBody = this.snakeBodies[index];
+
+        const horizontalIndex = (snakeBody.position.x - edgePadding) / playerSizeAndSpeed;
+        const verticalIndex = (snakeBody.position.y - edgePadding) / playerSizeAndSpeed;
+
+        if (horizontalIndex > maxHorizontal - 1 || verticalIndex > maxVertical - 1) return;
+
+        const locationIndex = horizontalIndex + verticalIndex * maxHorizontal;
+
+        if (0 <= locationIndex && locationIndex < maxHorizontal * maxVertical) {
+            allLocationsMatrix[locationIndex].canSpawn = false;
+        }
     }
 
     checkCollisionBetweenItself(index) {
@@ -76,6 +91,7 @@ class Snake {
         }
     }
 
+    // most efficient and clean way until now inspired by Hangol's way
     updateGoingDirectionOfTails() {
         for (let index = this.snakeBodies.length - 1; index > 0; index -= 1) {
             this.snakeBodies[index].goingDirection = this.snakeBodies[index - 1].goingDirection;
@@ -83,43 +99,35 @@ class Snake {
     }
 
     update() {
+        if (this.canAddBody) this.addBody();
+
         for (let index = 0; index < this.snakeBodies.length; index++) {
             switch (this.snakeBodies[index].goingDirection) {
-                case "right":
+                case Directions.Right:
                     this.snakeBodies[index].position.x += playerSizeAndSpeed;
                     break;
-                case "left":
+                case Directions.Left:
                     this.snakeBodies[index].position.x -= playerSizeAndSpeed;
                     break;
-                case "up":
+                case Directions.Up:
                     this.snakeBodies[index].position.y -= playerSizeAndSpeed;
                     break;
-                case "down":
+                case Directions.Down:
                     this.snakeBodies[index].position.y += playerSizeAndSpeed;
                     break;
             }
+            this.setCanFoodSpawnLocationStatus(index);
             this.checkCollisionBetweenItself(index);
         }
 
         this.checkCollisionToWall();
-
-        if (this.canAddBody) this.addBody();
 
         this.updateGoingDirectionOfTails();
     }
 
     draw() {
         this.snakeBodies.forEach((snake) => {
-            backgroundContext.beginPath();
-            backgroundContext.fillStyle = "green";
-            backgroundContext.roundRect(
-                snake.position.x,
-                snake.position.y,
-                playerSizeAndSpeed,
-                playerSizeAndSpeed,
-                10
-            );
-            backgroundContext.fill();
+            drawRoundedRectangle("green", snake.position.x, snake.position.y, 10);
         });
     }
 
@@ -138,13 +146,19 @@ class Snake {
             goingDirection: this.snakeBodies[this.snakeBodies.length - 1].goingDirection,
         });
 
-        if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == "up") {
+        if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == Directions.Up) {
             this.snakeBodies[this.snakeBodies.length - 1].position.y += playerSizeAndSpeed;
-        } else if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == "down") {
+        } else if (
+            this.snakeBodies[this.snakeBodies.length - 1].goingDirection == Directions.Down
+        ) {
             this.snakeBodies[this.snakeBodies.length - 1].position.y -= playerSizeAndSpeed;
-        } else if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == "left") {
+        } else if (
+            this.snakeBodies[this.snakeBodies.length - 1].goingDirection == Directions.Left
+        ) {
             this.snakeBodies[this.snakeBodies.length - 1].position.x += playerSizeAndSpeed;
-        } else if (this.snakeBodies[this.snakeBodies.length - 1].goingDirection == "right") {
+        } else if (
+            this.snakeBodies[this.snakeBodies.length - 1].goingDirection == Directions.Right
+        ) {
             this.snakeBodies[this.snakeBodies.length - 1].position.x -= playerSizeAndSpeed;
         }
 
@@ -168,6 +182,13 @@ function canRunLoop(fps, id) {
     msPrevs[id.toString()] = msNow - excessTime;
 
     return true;
+}
+
+function drawRoundedRectangle(color, posX, posY, borderRadius) {
+    backgroundContext.beginPath();
+    backgroundContext.fillStyle = color;
+    backgroundContext.roundRect(posX, posY, playerSizeAndSpeed, playerSizeAndSpeed, borderRadius);
+    backgroundContext.fill();
 }
 
 function randomNumber(to) {
@@ -203,37 +224,41 @@ function drawBackground() {
 }
 
 function configureSnakeDirectionByKey() {
-    if (lastKeyPressed == "w" && snake.snakeBodies[0].goingDirection != "down")
-        snake.setDirection("up");
-    else if (lastKeyPressed == "a" && snake.snakeBodies[0].goingDirection != "right")
-        snake.setDirection("left");
-    else if (lastKeyPressed == "s" && snake.snakeBodies[0].goingDirection != "up")
-        snake.setDirection("down");
-    else if (lastKeyPressed == "d" && snake.snakeBodies[0].goingDirection != "left")
-        snake.setDirection("right");
+    if (lastKeyPressed == "w" && snake.snakeBodies[0].goingDirection != Directions.Down)
+        snake.setDirection(Directions.Up);
+    else if (lastKeyPressed == "a" && snake.snakeBodies[0].goingDirection != Directions.Right)
+        snake.setDirection(Directions.Left);
+    else if (lastKeyPressed == "s" && snake.snakeBodies[0].goingDirection != Directions.Up)
+        snake.setDirection(Directions.Down);
+    else if (lastKeyPressed == "d" && snake.snakeBodies[0].goingDirection != Directions.Left)
+        snake.setDirection(Directions.Right);
+}
+
+function getAllPlaceToSpawnFood() {
+    let allLocationsMatrix = [];
+
+    for (let i = 0; i < maxVertical; i++) {
+        for (let j = 0; j < maxHorizontal; j++) {
+            const posX = edgePadding + playerSizeAndSpeed * j;
+            const posY = edgePadding + playerSizeAndSpeed * i;
+            allLocationsMatrix.push({
+                position: {
+                    x: posX,
+                    y: posY,
+                },
+                canSpawn: true,
+            });
+        }
+    }
+
+    return allLocationsMatrix;
 }
 
 function addFoodIfEmpty() {
     if (foods.length == 0) {
-        let allPossiblePlaceToPutFood = [];
+        const allPossiblePlaceToPutFood = allLocationsMatrix.filter((place) => place.canSpawn);
 
-        for (let i = 0; i < maxVertical; i++) {
-            for (let j = 0; j < maxHorizontal; j++) {
-                const posX = edgePadding + playerSizeAndSpeed * j;
-                const posY = edgePadding + playerSizeAndSpeed * i;
-                const snakeFound = snake.snakeBodies.findIndex(
-                    (snakeBody) => snakeBody.position.x == posX && snakeBody.position.y == posY
-                );
-                if (snakeFound == -1) {
-                    allPossiblePlaceToPutFood.push({
-                        position: {
-                            x: posX,
-                            y: posY,
-                        },
-                    });
-                }
-            }
-        }
+        console.log(allPossiblePlaceToPutFood.length);
 
         if (allPossiblePlaceToPutFood.length == 0) {
             console.log("You won");
@@ -279,9 +304,11 @@ function physicsLoop() {
 
     configureSnakeDirectionByKey();
 
-    addFoodIfEmpty();
+    allLocationsMatrix.forEach((place) => (place.canSpawn = true));
 
     snake.update();
+
+    addFoodIfEmpty();
 
     checkFoodCollision();
 }
@@ -291,6 +318,7 @@ let snake = new Snake();
 let foods = [];
 
 function initGame() {
+    allLocationsMatrix.forEach((place) => (place.canSpawn = true));
     lastKeyPressed = "d";
     foods = [];
     snake = new Snake();
@@ -304,16 +332,10 @@ document.addEventListener("keydown", (event) => {
     event.preventDefault();
     switch (event.key.toLowerCase()) {
         case "w":
-            lastKeyPressed = "w";
-            break;
         case "a":
-            lastKeyPressed = "a";
-            break;
         case "s":
-            lastKeyPressed = "s";
-            break;
         case "d":
-            lastKeyPressed = "d";
+            lastKeyPressed = event.key.toLowerCase();
             break;
     }
 });
