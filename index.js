@@ -2,7 +2,7 @@ const physicsFPS = 10;
 const playerSizeAndSpeed = 30;
 const maxHorizontal = 40;
 const maxVertical = 20;
-const edgePadding = 10;
+const edgePadding = 30;
 const canvasWidth = edgePadding * 2 + playerSizeAndSpeed * maxHorizontal;
 const canvasHeight = edgePadding * 2 + playerSizeAndSpeed * maxVertical;
 
@@ -223,6 +223,16 @@ function drawBackground() {
     );
 }
 
+function drawScore() {
+    backgroundContext.fillStyle = "white";
+    backgroundContext.font = "20px sans-serif";
+
+    var textString = `Score: ${score}`,
+        textWidth = backgroundContext.measureText(textString).width;
+
+    backgroundContext.fillText(textString, canvasWidth / 2 - textWidth / 2, 25);
+}
+
 function configureSnakeDirectionByKey() {
     if (lastKeyPressed == "w" && snake.snakeBodies[0].goingDirection != Directions.Down)
         snake.setDirection(Directions.Up);
@@ -281,6 +291,7 @@ function checkFoodCollision() {
     ) {
         snake.canAddBody = true;
         foods.pop();
+        score++;
     }
 }
 
@@ -288,6 +299,8 @@ function animationLoop() {
     requestAnimationFrame(animationLoop);
 
     drawBackground();
+
+    drawScore();
 
     drawBoard();
 
@@ -316,12 +329,14 @@ function physicsLoop() {
 let lastKeyPressed = "";
 let snake = new Snake();
 let foods = [];
+let score = 0;
 
 function initGame() {
     allLocationsMatrix.forEach((place) => (place.canSpawn = true));
     lastKeyPressed = "d";
     foods = [];
     snake = new Snake();
+    score = 0;
     animationLoop();
     physicsLoop();
 }
